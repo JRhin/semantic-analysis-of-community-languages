@@ -73,7 +73,7 @@ def define_original_model(path: Path,
 # ========================================================================
 
 def main() -> None:
-    """
+    """The main loop.
     """
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / "data"
@@ -82,12 +82,16 @@ def main() -> None:
 
     MODELS_PATH.mkdir(exist_ok=True)
 
+    # Variables
+    min_len = 10
+
     # Get the topics
     topics = [topic.lower() for topic in pl.scan_parquet(PARQUET_PATH).select('topic').unique().sort('topic').collect().get_column('topic').to_list()]
 
     # Read the tokenized texts for each topic
+    print("Read the tokenized texts for each topic...")
     df = pl.DataFrame()
-    for topic in topics:
+    for topic in tqdm(topics):
         df = df.vstack(pl.read_parquet(DATA_DIR / f'tokenized texts/{topic}.parquet').with_columns(Topic=pl.lit(topic)))
 
     # Define and save the original model
@@ -96,9 +100,11 @@ def main() -> None:
                           workers=cpu_count())
     
     # Train an original model istance for each topic
-    w2v_models = {}
+    print()
+    print("Training an original model instance for each topic...")
+    w2v_models = dict()
     for topic in tqdm(topics):
-        texts = df.filter((pl.col('Topic')==topic)&(pl.col('Texts').list.len()>= 10)).get_column('Texts').to_list()
+        texts = df.filter((pl.col('Topic')==topic)&(pl.col('Texts').list.len()>= min_len)).get_column('Texts').to_list()
 
         # Load the original model configuration
         w2v_models[topic] = Word2Vec.load(str(original_model))
