@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 from gensim.models import Word2Vec
 from gensim.corpora import Dictionary
 
-from src.mappings import relative_representation
+from src.mappings import relative_representation, semantic_differences
 
 
 # ========================================================================
@@ -27,6 +27,7 @@ def main() -> None:
 
     # Variables
     min_dfs = 150
+    prob = 0.9
   
     # Get the topics
     topics = [topic.lower() for topic in pl.scan_parquet(PARQUET_PATH).select('topic').unique().sort('topic').collect().get_column('topic').to_list()]
@@ -92,7 +93,7 @@ def main() -> None:
             token_id = dictionaries[topic].token2id[token]
             tokens.append(token)
             dfs.append(dictionaries[topic].dfs[token_id])
-            cfs.append(dictionaries[topic].dfs[token_id])
+            cfs.append(dictionaries[topic].cfs[token_id])
             embeddings.append(models[topic].wv[token])
 
         summary = summary.vstack(pl.DataFrame({
@@ -100,9 +101,9 @@ def main() -> None:
                                      'Token': tokens,
                                      'Frequency in Documents': dfs,
                                      'Frequency': cfs,
-                                     'Embeddings': embeddings
-                                 }).filter(pl.col("Frequency in Documents") >= min_dfs).with_row_index())
-
+                                     'Embedding': embeddings
+                                 }).filter(pl.col("Frequency in Documents") >= 150).with_row_index())
+    
     # Update the vocabularies
     print()
     print("Update the vocabularies...")
@@ -117,7 +118,47 @@ def main() -> None:
     print(f"Number of tokens for each topic (with dfs >= {min_dfs}):")
     for topic in vocabularies:
         print(f'\t{topic}: {len(vocabularies[topic])} tokens of which {round(len(common_vocab)/len(vocabularies[topic])*100, 2)}% are in common.')
-   
+
+    # Get the common adjectives as anchors
+    print()
+    print("Retrieving the common adjectives as anchors...")
+    adjectives_df = pl.DataFrame()
+    for topic in tqdm(topics):
+        adjectives_df = adjectives_df.vstack(pl.read_parquet(DATA_DIR / f'adjectives/{topic}_adjectives.parquet').with_columns(Topic=pl.lit(topic)))
+
+    adjectives_df = (
+                        adjectives_df
+                        .join(summary, on=['Topic', 'Token'])
+                        .with_columns(Prob=pl.col('Count')/pl.col('Frequency'))
+                        .filter(pl.col('Prob')>=prob)
+                        .filter(pl.col("Frequency in Documents") >= pl.col("Frequency in Documents").quantile(0.5))
+                        .group_by('Token').len()
+                        .filter(pl.col('len') == len(topics))
+                    )
+
+    anchors = adjectives_df['Token'].to_list()
+    
+    print()
+    print(f"Get the relative representation for {len(anchors)} anchors...")
+    rel_repr = relative_representation(summary, topics, anchors)
+    print(rel_repr)
+
+    print()
+    print("Get the semantic differences...")
+    sem_diff_df = pl.DataFrame()
+    sem_diff = semantic_differences(rel_repr, topics, anchors)
+    for couple in sem_diff:
+        sem_diff_df.vstack(sem_diff[couple].with_columns(Combination=pl.lit(couple)).select(['Combination', 'Token', 'Semantic Distance']),
+                           in_place=True)
+        print(couple)
+        print(sem_diff[couple])
+        print()
+
+    print()
+    print(sem_diff_df)
+
+    sem_diff_df.write_parquet('results.parquet')
+        
     return None
 
 

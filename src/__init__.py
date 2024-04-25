@@ -1,1 +1,1 @@
-__all__ = ['tokenizer']
+__all__ = ['tokenizer', 'mappings']

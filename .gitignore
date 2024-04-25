@@ -1,5 +1,8 @@
 data/*
+models/*
+
 *.zip
+*.parquet
 
 *__pycache__
 
