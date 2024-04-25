@@ -4,6 +4,7 @@
 import spacy
 import numpy as np
 from tqdm.auto import tqdm
+from collections import defaultdict
 
 from spacy import Language
 from spacy.tokens.doc import Doc
@@ -57,7 +58,7 @@ class Tokenizer():
                  desc: str = None,
                  keep_tokens: list[str] = ["NOUN", "ADJ", "VERB", "PRON"],
                  n_process: int = 1,
-                 batch_size: int = 1000) -> tuple[list[list[str]], dict[str, dict[str, float]]]:
+                 batch_size: int = 1000) -> list[list[str]]:
         """It tokenizes the passed corpora.
 
         Args:
@@ -85,6 +86,46 @@ class Tokenizer():
 
         return tokenized_texts
 
+    
+    def adjectives(self,
+                   corpora: list[str],
+                   desc: str = None,
+                   n_process: int = 1,
+                   batch_size: int = 1000) -> dict[str, int]:
+        """Get the dictionary of adjectives and how many times they appeared as ADJ.
+        
+        Args:
+            corpora : list[str]
+                A list of sentences.
+            desc : str
+                The description for tqdm. Default None.
+            n_process : int
+                The number of process to use to run nlp.pipe in parallel. Default 1.
+            batch_size : int
+                The batch size. Default 1000.
+
+        Returns:
+            adj: dict[str, int]
+                The ADJ tokens with how many times they appeared as ADJ.
+        """
+        adj = defaultdict(lambda: 0)
+        for text in tqdm(self.nlp.pipe(corpora, n_process=n_process, batch_size=batch_size), total=len(corpora), desc=desc):
+            for token in text:
+                # Get the lemma
+                lemma = token.lemma_.lower()
+                if token.pos_ == 'ADJ':
+                    # Count how many times this token is an ADJ                   
+                    adj[lemma] += 1
+
+        return dict(adj)
+                        
+        
+
+# ========================================================================
+#
+#                                MAIN LOOP
+#
+# ========================================================================
 
 def main() -> None:
     """Some sanity checks.
@@ -97,7 +138,8 @@ def main() -> None:
     spacy.prefer_gpu()
     
     nlp = Tokenizer()
-    nlp.tokenize(sentences, n_process=1,)
+    nlp.tokenize(sentences, n_process=1)
+    nlp.adjectives(sentences, n_process=1)
 
     print("Done.")
 
