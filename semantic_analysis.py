@@ -26,8 +26,9 @@ def main() -> None:
     PARQUET_PATH: Path = DATA_DIR / "voat_labeled_data_unified.parquet"
 
     # Variables
-    min_dfs = 150
     prob = 0.9
+    adj_qt = 0.1
+    min_dfs = 150
   
     # Get the topics
     topics = [topic.lower() for topic in pl.scan_parquet(PARQUET_PATH).select('topic').unique().sort('topic').collect().get_column('topic').to_list()]
@@ -131,7 +132,7 @@ def main() -> None:
                         .join(summary, on=['Topic', 'Token'])
                         .with_columns(Prob=pl.col('Count')/pl.col('Frequency'))
                         .filter(pl.col('Prob')>=prob)
-                        .filter(pl.col("Frequency in Documents") >= pl.col("Frequency in Documents").quantile(0.5))
+                        .filter(pl.col("Frequency in Documents") >= pl.col("Frequency in Documents").quantile(adj_qt))
                         .group_by('Token').len()
                         .filter(pl.col('len') == len(topics))
                     )
