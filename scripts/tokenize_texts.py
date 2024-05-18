@@ -1,9 +1,12 @@
-"""The script to retrieve the adjectives for each topic.
+"""The script to tokenize the texts of each topic.
 """
+# Add root to the path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.path[0]).parent))
 
 import spacy
 import polars as pl
-from pathlib import Path
 from tqdm.auto import tqdm
 
 from src.tokenizer import Tokenizer
@@ -43,18 +46,17 @@ def main() -> None:
     print()
     print('Starting tokenizing the texts...')
     nlp = Tokenizer()
-    adjectives = dict()
+    tokenized_texts = dict()
     for topic in corporas:
-        # Perform the adjective retrieval
-        adjectives[topic] = nlp.adjectives(corporas[topic], topic, batch_size=15000)
+        # Perform the texts tokenization
+        tokenized_texts[topic] = nlp.tokenize(corporas[topic], topic, batch_size=15000)
 
         # Define the path where to cache the results
-        path: Path = DATA_DIR / "adjectives"
+        path: Path = DATA_DIR / "tokenized text"
         path.mkdir(exist_ok=True)
 
-        # Save the adjectives as a parquet
-        pl.DataFrame({'Token': list(adjectives[topic].keys()),
-                      'Count': list(adjectives[topic].values())}).write_parquet(path/f'{topic.lower()}_adjectives.parquet')
+        # Save the tokenized texts as a parquet
+        pl.DataFrame({'Texts': tokenized_texts[topic]}).write_parquet(path/f'{topic.lower()}.parquet')
 
     return None
 

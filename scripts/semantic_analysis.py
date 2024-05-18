@@ -1,8 +1,11 @@
+"""The script for computing the semantic analysis.
 """
-"""
+# Add root to the path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.path[0]).parent))
 
 import polars as pl
-from pathlib import Path
 from tqdm.auto import tqdm
 
 from gensim.models import Word2Vec

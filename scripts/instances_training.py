@@ -1,8 +1,11 @@
 """This python module train an istance of the original model for each topic.
 """
+# Add root to the path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(sys.path[0]).parent))
 
 import polars as pl
-from pathlib import Path
 from tqdm.auto import tqdm
 from gensim.models import Word2Vec
 from multiprocessing import cpu_count
