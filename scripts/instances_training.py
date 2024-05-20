@@ -1,4 +1,4 @@
-"""This python module train an istance of the original model for each topic.
+"""This python module is used to train an istance of the original model for each topic.
 """
 # Add root to the path
 import sys
