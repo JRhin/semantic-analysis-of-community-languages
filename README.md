@@ -12,7 +12,7 @@ This study aims to analyze the semantic distinctions among languages,  consideri
 
 Let $s\in\mathcal{S}$ be a syntactically defined symbol belonging to the space of all possible symbols $\mathcal{S}$.
 
-Consider a language $L$ as a set of symbols $L : \{s_{1},\dots,s_{|L|}\}$, where each symbol $s_i$ has a specific semantic meaning $z_i\in \mathcal{Z}_l\subset \mathbb{R}^{|z_i|}$. A text $t_l=[s_1,\dots, s_{|t_l|} ]$ is defined as a particular combination with repetition of $|t_l|$ symbols from a specific language $L_l$.
+Consider a language $L$ as a set of symbols $L : \{s_{1},\dots,s_{|L|}\}$, where each symbol $s_i$ has a specific semantic meaning $z_i\in \mathcal{Z}_l \subset \mathbb{R}^{|z_i|}$. A text $t_l=[s_1,\dots, s_{|t_l|} ]$ is defined as a particular combination with repetition of $|t_l|$ symbols from a specific language $L_l$.
 
 Suppose we have a dataset $\mathcal{D}$ consisting of $n$ texts, which can be categorized into $|\mathcal{L}|$ different languages, denoted by $\mathcal{L}:\{L_1,\dots,L_{|\mathcal{L}|}\}$. A specific text $t_{i,l}$ can then be defined, where $i$ indicates its position in $\mathcal{D}$ and $l$ is the index of the corresponding language such that $L_l\in\mathcal{L}$​.
 
