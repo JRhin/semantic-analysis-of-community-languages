@@ -29,12 +29,14 @@ To summarize:
 2. Train distinct instances $M_l$ for each $L_l\in\mathcal{L}$.
 
 3. Obtain the latent representations (encodings) of the language symbols:
+
    $$
    z_i=\text{sem}_l(s_i) \quad\forall s_i\in L_j \quad \forall L_j \in \mathcal{L}
    $$
    
 
 4. Defined a set $\mathcal{A}$ and map these encodings into a shared relative space:
+
    $$
    r_i = \text{rel}_{l,\mathcal{A}}(z_i) \quad \forall z_i \in \mathcal{Z}_j \quad \forall L_j \in \mathcal{L}
    $$
