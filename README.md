@@ -48,8 +48,9 @@ $$
 ||\text{rel}_{i,\mathcal{A}}(\text{sem}_i(s_k))-\text{rel}_{j,\mathcal{A}}(\text{sem}_j(s_k))||\quad \forall s_k \in L_i\cap L_j
 $$
 
+
 $$
-||r_{k,i}-r_{k,j}||\quad \forall s_k \in L_i\cap Lj
+||r_{k,i}-r_{k,j}||\quad \forall s_k \in L_i\cap L_j
 $$
 
 ## Directory Structure
