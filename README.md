@@ -31,21 +31,28 @@ To summarize:
 3. Obtain the latent representations (encodings) of the language symbols:
 
    $$
+   
    z_i=\text{sem}_l(s_i) \quad\forall s_i\in L_j \quad \forall L_j \in \mathcal{L}
+   
    $$
    
 
 4. Defined a set $\mathcal{A}$ and map these encodings into a shared relative space:
 
    $$
+   
    r_i = \text{rel}_{l,\mathcal{A}}(z_i) \quad \forall z_i \in \mathcal{Z}_j \quad \forall L_j \in \mathcal{L}
+   
    $$
    
 
 5. Compute the Euclidean norm between the relative representations of common symbols across two languages:
+
    $$
+   
    ||\text{rel}_{i,\mathcal{A}}(\text{sem}_i(s_k))-\text{rel}_{j,\mathcal{A}}(\text{sem}_j(s_k))||\quad \forall s_k \in L_i\cap Lj\\
    ||r_{k,i}-r_{k,j}||\quad \forall s_k \in L_i\cap Lj
+   
    $$
 
 ## Directory Structure
