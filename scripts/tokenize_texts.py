@@ -27,7 +27,6 @@ def main() -> None:
     PARQUET_PATH: Path = DATA_DIR / "voat_labeled_data_unified.parquet"
     
     # Variables
-    MODEL: Path = CURRENT / "model/original_model.model"
     column = "text"
     
     # Make spacy use the GPU if available
