@@ -6,7 +6,7 @@ This study aims to analyze the semantic distinctions among languages,  consideri
 
 ## Results
 
-![semantic difference](.\img\semantic_difference.png)
+![semantic difference](./img/semantic_difference.png)
 
 ## The analysis procedure
 
