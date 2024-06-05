@@ -26,7 +26,7 @@ One way to estimate $\mathcal{Z}_l$ is by using a mapping function $\text{sem}_l
 
 Given two different languages $L_i$ and $L_j$, note that their semantic spaces $\mathcal{Z_i}$ and $\mathcal{Z_l}$ are not directly comparable. Thus, there's a requirement for a common semantic space $\mathcal{R}$ that is language-agnostic.
 
-To address this, anchors $a\in\mathcal{A}\subset S$ are introduced as symbols with a shared semantic meaning across all languages. Subsequently, a mapping function $\text{rel}_{l,\mathcal{A}}(\cdot): {\mathcal{Z}}_l \to \mathcal{R}_{\mathcal{A}} \subset \mathbb{R}^{|\mathcal{A}|}$ can be defined. This function maps the semantic meaning of a specific symbol $s_i\in L_l$ to a relative space shared across all languages.
+To address this, anchors $a\in\mathcal{A}\subset S$ are introduced as symbols with a shared semantic meaning across all languages. Subsequently, a mapping function $\text{rel}_{l,\mathcal{A}}(\cdot): {\mathcal{Z}}_{l} \to \mathcal{R}_{\mathcal{A}} \subset \mathbb{R}^{|\mathcal{A}|}$ can be defined. This function maps the semantic meaning of a specific symbol $s_i\in L_l$ to a relative space shared across all languages.
 
 To summarize:
 
