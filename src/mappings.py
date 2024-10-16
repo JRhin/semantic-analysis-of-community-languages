@@ -135,7 +135,7 @@ def semantic_differences(dataframe: pl.DataFrame,
 # ========================================================================
 
 def main() -> None:
-    """ 
+    """
     """
     return None
 
