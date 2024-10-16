@@ -59,7 +59,7 @@ class Tokenizer():
                  keep_tokens: list[str] = ["NOUN", "ADJ", "VERB", "PRON"],
                  n_process: int = 1,
                  batch_size: int = 1000) -> list[list[str]]:
-        """It tokenizes the passed corpora.
+        """It tokenizes the passed corpora and retrieve the adjectives.
 
         Args:
             corpora : list[str]
@@ -76,50 +76,38 @@ class Tokenizer():
         Returns:
             tokenized_texts : list[list[str]]
                 The list of tokenized version of the texts in the corpora.
+
+            adj : dict[str, int]
+                The dictionary with the adjectives and their frequencies.
         """
         tokenized_texts = []
-        for text in tqdm(self.nlp.pipe(corpora, n_process=n_process, batch_size=batch_size), total=len(corpora), desc=desc):
-            tokens = [token.lemma_.lower() for token in text if token.pos_ in keep_tokens and not token.is_stop and token.is_alpha]
-
-            if len(tokens) != 0:
-                tokenized_texts.append(tokens)
-
-        return tokenized_texts
-
-    
-    def adjectives(self,
-                   corpora: list[str],
-                   desc: str = None,
-                   n_process: int = 1,
-                   batch_size: int = 1000) -> dict[str, int]:
-        """Get the dictionary of adjectives and how many times they appeared as ADJ.
-        
-        Args:
-            corpora : list[str]
-                A list of sentences.
-            desc : str
-                The description for tqdm. Default None.
-            n_process : int
-                The number of process to use to run nlp.pipe in parallel. Default 1.
-            batch_size : int
-                The batch size. Default 1000.
-
-        Returns:
-            adj: dict[str, int]
-                The ADJ tokens with how many times they appeared as ADJ.
-        """
         adj = defaultdict(lambda: 0)
         for text in tqdm(self.nlp.pipe(corpora, n_process=n_process, batch_size=batch_size), total=len(corpora), desc=desc):
+            # tokens = [token.lemma_.lower() for token in text if token.pos_ in keep_tokens and not token.is_stop and token.is_alpha]
+
+            # if len(tokens) != 0:
+            #     tokenized_texts.append(tokens)
+            tokens = []
             for token in text:
-                # Get the lemma
+                # Check the nature of the tokens
+                if token.pos_ not in keep_tokens and token.is_stop and not token.is_alpha: continue
+
                 lemma = token.lemma_.lower()
-                if token.pos_ == 'ADJ':
-                    # Count how many times this token is an ADJ                   
+
+                # Check if adj
+                if token.pos_ == "ADJ":
                     adj[lemma] += 1
 
-        return dict(adj)
-                        
-        
+                # Save the lemmas
+                tokens.append(lemma)
+
+                # Save the tokens
+                if len(tokens) != 0:
+                    tokenized_texts.append(tokens)
+
+        return tokenized_texts, dict(adj)
+
+
 
 # ========================================================================
 #
