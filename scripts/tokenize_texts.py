@@ -22,7 +22,7 @@ def main() -> None:
     """The main loop.
     """
     # Defining paths
-    platform: str = "voat"
+    platform: str = "Voat"
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / 'data'
     PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
@@ -47,19 +47,20 @@ def main() -> None:
     print()
     print('Starting tokenizing the texts...')
     nlp = Tokenizer()
-    tokenized_texts = dict()
-    adjectives = dict()
     for language in corporas:
         # Perform the texts tokenization
-        tokenized_texts[language], adjectives[language] = nlp.tokenize(corporas[language], language, batch_size=15000)
+        tokenized_texts, adjectives = nlp.tokenize(corporas[language], language, batch_size=15000)
 
         # Define the path where to cache the results
         path: Path = DATA_DIR / f"{platform}"
         path.mkdir(exist_ok=True)
 
-        # Save the tokenized texts as a parquet
-        pl.DataFrame({'Texts': tokenized_texts[language]}).write_parquet(path/f'{language.lower()}_tokens.parquet')
-        pl.DataFrame({'Texts': adjectives[language]}).write_parquet(path/f'{language.lower()}_adj.parquet')
+        # Save the resuls in parquet files
+        pl.DataFrame({'Token': list(adjectives.keys()),
+                      'Count': list(adjectives.values())}).write_parquet(path/f'{language.lower()}_adjectives.parquet')
+        del adjectives
+        pl.DataFrame({'Texts': tokenized_texts}).write_parquet(path/f'{language.lower()}_tokens.parquet')
+        del tokenized_texts
 
     return None
 

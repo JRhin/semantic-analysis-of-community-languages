@@ -10,7 +10,7 @@
       };
       en = pkgs.python311Packages.buildPythonPackage {
         pname = "en_core_web_sm";
-        version = "3.7.1";
+        version = "3.8.0";
         src = pkgs.fetchurl {
           url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz";
           hash = "sha256-FKLzG8R2r4cBmBnqjJlI+r39RzpELt1rHLpivwwsD1U=";
