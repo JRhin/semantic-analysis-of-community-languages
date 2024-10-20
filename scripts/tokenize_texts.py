@@ -22,7 +22,7 @@ def main() -> None:
     """The main loop.
     """
     # Defining paths
-    platform: str = "Voat"
+    platform: str = "reddit"
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / 'data'
     PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
@@ -48,7 +48,7 @@ def main() -> None:
     nlp = Tokenizer()
     for language in corporas:
         # Perform the texts tokenization
-        tokenized_texts, adjectives = nlp.tokenize(corporas[language], language, batch_size=15000)
+        tokenized_texts, adjectives = nlp.tokenize(corporas[language], language)#, batch_size=15000)
 
         # Define the path where to cache the results
         path: Path = DATA_DIR / f"{platform}"

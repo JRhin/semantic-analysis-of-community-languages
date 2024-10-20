@@ -83,27 +83,23 @@ class Tokenizer():
         tokenized_texts = []
         adj = defaultdict(lambda: 0)
         for text in tqdm(self.nlp.pipe(corpora, n_process=n_process, batch_size=batch_size), total=len(corpora), desc=desc):
-            # tokens = [token.lemma_.lower() for token in text if token.pos_ in keep_tokens and not token.is_stop and token.is_alpha]
-
-            # if len(tokens) != 0:
-            #     tokenized_texts.append(tokens)
             tokens = []
             for token in text:
                 # Check the nature of the tokens
-                if token.pos_ not in keep_tokens and token.is_stop and not token.is_alpha: continue
+                if token.pos_ in keep_tokens and not token.is_stop and token.is_alpha:
 
-                lemma = token.lemma_.lower()
+                    lemma = token.lemma_.lower()
 
-                # Check if adj
-                if token.pos_ == "ADJ":
-                    adj[lemma] += 1
+                    # Check if adj
+                    if token.pos_ == "ADJ":
+                        adj[lemma] += 1
 
-                # Save the lemmas
-                tokens.append(lemma)
+                    # Save the lemmas
+                    tokens.append(lemma)
 
-                # Save the tokens
-                if len(tokens) != 0:
-                    tokenized_texts.append(tokens)
+            # Save the tokens
+            if len(tokens) != 0:
+                tokenized_texts.append(tokens)
 
         return tokenized_texts, dict(adj)
 

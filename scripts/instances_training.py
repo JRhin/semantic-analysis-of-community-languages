@@ -1,4 +1,4 @@
-"""This python module is used to train an istance of the original model for each topic.
+"""This python module is used to train an istance of the original model for each language.
 """
 # Add root to the path
 import sys
@@ -78,9 +78,10 @@ def define_original_model(path: Path,
 def main() -> None:
     """The main loop.
     """
+    platform: str = "reddit"
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / "data"
-    PARQUET_PATH: Path = DATA_DIR / "voat_labeled_data_unified.parquet"
+    PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
     MODELS_PATH: Path = CURRENT / "models"
 
     MODELS_PATH.mkdir(exist_ok=True)
@@ -88,37 +89,41 @@ def main() -> None:
     # Variables
     min_len = 10
 
-    # Get the topics
-    topics = [topic.lower() for topic in pl.scan_parquet(PARQUET_PATH).select('topic').unique().sort('topic').collect().get_column('topic').to_list()]
+    # Get the languages
+    languages = [language.lower() for language in pl.scan_parquet(PARQUET_PATH).select('language').unique().sort('language').collect().get_column('language').to_list()]
 
-    # Read the tokenized texts for each topic
-    print("Read the tokenized texts for each topic...")
-    df = pl.DataFrame()
-    for topic in tqdm(topics):
-        df = df.vstack(pl.read_parquet(DATA_DIR / f'tokenized texts/{topic}.parquet').with_columns(Topic=pl.lit(topic)))
+    # Read the tokenized texts for each language
+    # print("Read the tokenized texts for each language...")
+    # df = pl.DataFrame()
+    # for language in tqdm(languages):
+    #     df = df.vstack(pl.read_parquet(DATA_DIR / f'{platform}/{language}_tokens.parquet').with_columns(language=pl.lit(language)))
 
     # Define and save the original model
     original_model = MODELS_PATH / "original_w2v.model"
     define_original_model(path = original_model,
                           workers=cpu_count())
     
-    # Train an original model istance for each topic
+    # Train an original model istance for each language
     print()
-    print("Training an original model instance for each topic...")
+    print("Training an original model instance for each language...")
     w2v_models = dict()
-    for topic in tqdm(topics):
-        texts = df.filter((pl.col('Topic')==topic)&(pl.col('Texts').list.len()>= min_len)).get_column('Texts').to_list()
+    for language in tqdm(languages):
+        # Read the tokenized texts for each language
+        # print(pl.read_parquet(DATA_DIR/f'{platform}/{language}_tokens.parquet'))
+        texts = pl.scan_parquet(DATA_DIR/f'{platform}/{language}_tokens.parquet').select(pl.col("Texts")).filter(pl.col("Texts").list.len()>=min_len).collect().get_column("Texts").to_list()
+        # df.filter((pl.col('language')==language)&(pl.col('texts').list.len()>= min_len)).get_column('Texts').to_list()
 
         # Load the original model configuration
-        w2v_models[topic] = Word2Vec.load(str(original_model))
+        w2v_models[language] = Word2Vec.load(str(original_model))
 
         # Create the vocabulary
-        w2v_models[topic].build_vocab(texts)
+        w2v_models[language].build_vocab(texts)
 
-        # Train the model over the topic corpora
-        w2v_models[topic].train(texts, total_examples=w2v_models[topic].corpus_count, epochs=w2v_models[topic].epochs)
+        # Train the model over the language corpora
+        w2v_models[language].train(texts, total_examples=w2v_models[language].corpus_count, epochs=w2v_models[language].epochs)
 
-        w2v_models[topic].save(str(MODELS_PATH / f"{topic}_w2v.model"))
+        # Save the model
+        w2v_models[language].save(str(MODELS_PATH / f"{platform}_{language}_w2v.model"))
 
     return None
 
