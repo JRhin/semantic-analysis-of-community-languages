@@ -3,6 +3,7 @@
 
 import spacy
 import numpy as np
+import unicodedata
 from tqdm.auto import tqdm
 from collections import defaultdict
 
@@ -15,6 +16,13 @@ from spacy.tokens.doc import Doc
 #                           TOKENIZER SETTINGS
 #
 # ==============================================================================
+
+# Function to check if a character is an emoji
+def is_emoji(token):
+    for char in token.text:
+        if unicodedata.category(char).startswith("So"):
+            return True
+    return False
 
 @Language.component("handling_negation")
 def handling_negation(doc: Doc) -> Doc:
@@ -31,6 +39,24 @@ def handling_negation(doc: Doc) -> Doc:
     for token in doc:
         if token.pos_ == "VERB" and any(child.dep_ == "neg" for child in token.children):
             token.lemma_ = f"not_{token.lemma_}"
+    return doc
+
+
+@Language.component("handling_propnames")
+def handling_propnames(doc: Doc) -> Doc:
+    """This components handles the presence of propnames in a phrase by saving a particular version of the lemma.
+
+    Args:
+        doc : Doc
+            The "Doc" that currently SpaCy is handling.
+
+    Returns:
+        doc : Doc
+            The same "Doc" with the modified lemma.
+    """
+    for token in doc:
+        if token.pos_ == "PROPN":
+            token.lemma_ = f"propn_{token.lemma_}"
     return doc
 
 
@@ -52,11 +78,13 @@ class Tokenizer():
         # Add the custom processing components of the pipeline
         self.nlp.add_pipe("merge_entities")
         self.nlp.add_pipe("handling_negation", after="lemmatizer")
+        self.nlp.add_pipe("handling_propnames", after="merge_entities")
         
     def tokenize(self,
                  corpora: list[str],
                  desc: str = None,
-                 keep_tokens: list[str] = ["NOUN", "ADJ", "VERB", "PRON"],
+                 ids: list[str] = None, 
+                 keep_tokens: list[str] = ["NOUN", "ADJ", "VERB", "PRON", "PROPN"],
                  n_process: int = 1,
                  batch_size: int = 1000) -> list[list[str]]:
         """It tokenizes the passed corpora and retrieve the adjectives.
@@ -81,14 +109,15 @@ class Tokenizer():
                 The dictionary with the adjectives and their frequencies.
         """
         tokenized_texts = []
+        final_ids = []
         adj = defaultdict(lambda: 0)
-        for text in tqdm(self.nlp.pipe(corpora, n_process=n_process, batch_size=batch_size), total=len(corpora), desc=desc):
+        for i, text in enumerate(tqdm(self.nlp.pipe(corpora, n_process=n_process, batch_size=batch_size), total=len(corpora), desc=desc)):
             tokens = []
             for token in text:
                 # Check the nature of the tokens
-                if token.pos_ in keep_tokens and not token.is_stop and token.is_alpha:
+                if token.pos_ in keep_tokens and not token.is_stop and not is_emoji(token) and not token.like_url and not token.is_space:
 
-                    lemma = token.lemma_.lower()
+                    lemma = token.lemma_.lower().strip()
 
                     # Check if adj
                     if token.pos_ == "ADJ":
@@ -100,8 +129,9 @@ class Tokenizer():
             # Save the tokens
             if len(tokens) != 0:
                 tokenized_texts.append(tokens)
+                if ids: final_ids.append(ids[i])
 
-        return tokenized_texts, dict(adj)
+        return tokenized_texts, dict(adj), final_ids
 
 
 
@@ -122,8 +152,7 @@ def main() -> None:
     spacy.prefer_gpu()
     
     nlp = Tokenizer()
-    nlp.tokenize(sentences, n_process=1)
-    nlp.adjectives(sentences, n_process=1)
+    nlp.tokenize(sentences, ids=list(range(len(sentences))), n_process=1)
 
     print("Done.")
 
