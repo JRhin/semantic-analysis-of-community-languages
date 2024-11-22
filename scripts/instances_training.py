@@ -78,7 +78,7 @@ def define_original_model(path: Path,
 def main() -> None:
     """The main loop.
     """
-    platform: str = "reddit"
+    platform: str = "paranormal_good"
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / "data"
     PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
@@ -92,12 +92,6 @@ def main() -> None:
     # Get the languages
     languages = [language.lower() for language in pl.scan_parquet(PARQUET_PATH).select('language').unique().sort('language').collect().get_column('language').to_list()]
 
-    # Read the tokenized texts for each language
-    # print("Read the tokenized texts for each language...")
-    # df = pl.DataFrame()
-    # for language in tqdm(languages):
-    #     df = df.vstack(pl.read_parquet(DATA_DIR / f'{platform}/{language}_tokens.parquet').with_columns(language=pl.lit(language)))
-
     # Define and save the original model
     original_model = MODELS_PATH / "original_w2v.model"
     define_original_model(path = original_model,
@@ -109,9 +103,7 @@ def main() -> None:
     w2v_models = dict()
     for language in tqdm(languages):
         # Read the tokenized texts for each language
-        # print(pl.read_parquet(DATA_DIR/f'{platform}/{language}_tokens.parquet'))
-        texts = pl.scan_parquet(DATA_DIR/f'{platform}/{language}_tokens.parquet').select(pl.col("Texts")).filter(pl.col("Texts").list.len()>=min_len).collect().get_column("Texts").to_list()
-        # df.filter((pl.col('language')==language)&(pl.col('texts').list.len()>= min_len)).get_column('Texts').to_list()
+        texts = pl.scan_parquet(DATA_DIR/f'{platform}/tokens/{language}_tokens.parquet').select(pl.col("Texts")).filter(pl.col("Texts").list.len()>=min_len).collect().get_column("Texts").to_list()
 
         # Load the original model configuration
         w2v_models[language] = Word2Vec.load(str(original_model))
@@ -123,7 +115,7 @@ def main() -> None:
         w2v_models[language].train(texts, total_examples=w2v_models[language].corpus_count, epochs=w2v_models[language].epochs)
 
         # Save the model
-        w2v_models[language].save(str(MODELS_PATH / f"{platform}_{language}_w2v.model"))
+        w2v_models[language].save(str(MODELS_PATH / f"{platform}/{platform}_{language}_w2v.model"))
 
     return None
 
