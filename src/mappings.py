@@ -16,25 +16,38 @@ from numpy.linalg import norm
 # ========================================================================
 
 def similarity(a: np.ndarray,
-               b: np.ndarray) -> float:
+               b: np.ndarray,
+               func: str = "euclidian") -> float:
     """A similarity/distance function.
 
     Args:
         a : np.ndarray
             First array.
         b : np.ndarray
-            Second array. 
+            Second array.
+        func: str
+            The type of similarity/distance function. Default 'euclidian'.
 
     Returns:
-        float
+        result : float
             The output of the similarity/distance function.
     """
-    return norm(a-b)
+    assert func in ["euclidian", "cosine"], "The 'func' parameter must be either 'euclidian' or 'cosine'."
+
+    match func:
+        case "euclidian":
+            result = norm(a-b)
+        case "cosine":
+            result = np.dot(a, b)/(norm(a)*norm(b))
+        case _:
+            raise ValueError("The passed 'func' value is not supported.")
+    return result
 
 
 def relative_representation(dataframe: pl.DataFrame,
                             languages: list[str],
-                            anchors: list[str] | set[str]) -> pl.DataFrame:
+                            anchors: list[str] | set[str],
+                            func: str = "euclidian") -> pl.DataFrame:
     """Defined a set of anchors, maps the absolute representation to a relative one.
 
     Args:
@@ -44,6 +57,8 @@ def relative_representation(dataframe: pl.DataFrame,
             A list of languages for which we perform the relative representation.
         anchors : list[str] | set[str]
             A set of anchors.
+        func: str
+            The type of similarity/distance function. Default 'euclidian'.
 
     Returns:
         relative_reps : pl.DataFrame
@@ -60,14 +75,14 @@ def relative_representation(dataframe: pl.DataFrame,
 
         # Get the tokens
         tokens = df['Token'].to_list()
-        
+
         embeddings = []
         for anchor in tqdm(anchors, desc=language):
             # Get the anchors absolute representation and use it as an axis
             axis = df.filter(pl.col('Token')==anchor)['Embedding'].item().to_numpy()
 
             # Remap the tokens to the new axis
-            embeddings.append(list(map(lambda x: similarity(axis, np.array(x)),
+            embeddings.append(list(map(lambda x: similarity(axis, np.array(x), func=func),
                                        df['Embedding'].to_list())))
 
         # Save the results in which the anchors are columns
