@@ -111,6 +111,8 @@ def main() -> None:
                                 "to": to_list,
                                 "weight": weight_list}).group_by(["from", "to"]).agg(pl.sum("weight"))
         df.vstack(current, in_place=True).group_by(["from", "to"]).agg(pl.sum("weight"))
+
+        df.write_parquet(DUMP_PATH / "last.parquet")
     
     return None
 
