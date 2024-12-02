@@ -1,5 +1,8 @@
-"""This python module is used to train an istance of the original model for each language.
+"""This python module handles the training of the language model.
+
+    To check the available parameters run 'python /path/to/instances_training.py --help'.
 """
+
 # Add root to the path
 import sys
 from pathlib import Path
@@ -78,12 +81,31 @@ def define_original_model(path: Path,
 def main() -> None:
     """The main loop.
     """
-    platform: str = "paranormal_good"
+    import argparse
+
+    description = """
+    This python module handles the training of the language model.
+
+    To check the available parameters run 'python /path/to/instances_training.py --help'.
+    """
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('-p',
+                        '--platform',
+                        help='The platform.',
+                        type=str,
+                        required=True)
+
+    args = parser.parse_args()
+
+    # Define some paths
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / "data"
-    PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
+    PARQUET_PATH: Path = DATA_DIR / f"{args.platform}.parquet"
     MODELS_PATH: Path = CURRENT / "models"
 
+    # Control over paths
     MODELS_PATH.mkdir(exist_ok=True)
 
     # Variables
@@ -97,13 +119,13 @@ def main() -> None:
     define_original_model(path = original_model,
                           workers=cpu_count())
     
-    # Train an original model istance for each language
+    # Train an original model instance for each language
     print()
     print("Training an original model instance for each language...")
     w2v_models = dict()
     for language in tqdm(languages):
         # Read the tokenized texts for each language
-        texts = pl.scan_parquet(DATA_DIR/f'{platform}/tokens/{language}_tokens.parquet').select(pl.col("Texts")).filter(pl.col("Texts").list.len()>=min_len).collect().get_column("Texts").to_list()
+        texts = pl.scan_parquet(DATA_DIR/f'{args.platform}/tokens/{language}_tokens.parquet').select(pl.col("Texts")).filter(pl.col("Texts").list.len()>=min_len).collect().get_column("Texts").to_list()
 
         # Load the original model configuration
         w2v_models[language] = Word2Vec.load(str(original_model))
@@ -115,7 +137,7 @@ def main() -> None:
         w2v_models[language].train(texts, total_examples=w2v_models[language].corpus_count, epochs=w2v_models[language].epochs)
 
         # Save the model
-        w2v_models[language].save(str(MODELS_PATH / f"{platform}/{platform}_{language}_w2v.model"))
+        w2v_models[language].save(str(MODELS_PATH / f"{args.platform}/{args.platform}_{language}_w2v.model"))
 
     return None
 

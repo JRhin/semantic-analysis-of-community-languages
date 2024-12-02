@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(sys.path[0]).parent))
 
 import polars as pl
+from igraph import Graph
 from tqdm.auto import tqdm
 
 from gensim.models import Word2Vec
@@ -23,16 +24,34 @@ from src.mappings import relative_representation, semantic_differences
 def main() -> None:
     """The main loop.
     """
-    platform: str = "reddit"
+    import argparse
+
+    description = """
+    This python module handles the semantic analysis of a platform.
+
+    To check the available parameters run 'python /path/to/semantic_analysis.py --help'.
+    """
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('-p',
+                        '--platform',
+                        help='The platform.',
+                        type=str,
+                        required=True)
+
+    args = parser.parse_args()
+    
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / "data"
     MODELS_DIR: Path = CURRENT / "models"
-    PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
+    PARQUET_PATH: Path = DATA_DIR / f"{args.platform}.parquet"
 
     # Variables
     prob: float  = 0.9
     adj_qt: float  = 0.1
     min_dfs: int = 150
+    pr: float = 0.6
   
     # Get the languages
     languages = [language.lower() for language in pl.scan_parquet(PARQUET_PATH).select('language').unique().sort('language').collect().get_column('language').to_list()]
@@ -41,7 +60,7 @@ def main() -> None:
     print("Read the tokenized texts for each language...")
     tokenized_texts = pl.DataFrame()
     for language in tqdm(languages):
-        tokenized_texts = tokenized_texts.vstack(pl.read_parquet(DATA_DIR / f'{platform}/tokens/{language}_tokens.parquet').with_columns(language=pl.lit(language)))
+        tokenized_texts = tokenized_texts.vstack(pl.read_parquet(DATA_DIR / f'{args.platform}/tokens/{language}_tokens.parquet').with_columns(language=pl.lit(language)))
 
     print()
     print("Number of documents for each language:")
@@ -66,7 +85,7 @@ def main() -> None:
     print("Retrieving the models...")
     models = dict()
     for language in tqdm(languages):
-        models[language] = Word2Vec.load(str(MODELS_DIR / f'{platform}/{platform}_{language}_w2v.model'))
+        models[language] = Word2Vec.load(str(MODELS_DIR / f'{args.platform}/{args.platform}_{language}_w2v.model'))
 
     # Create vocabularies
     print()
@@ -108,7 +127,8 @@ def main() -> None:
                                      'Frequency': cfs,
                                      'Embedding': embeddings
                                  }).filter(pl.col("Frequency in Documents") >= min_dfs).with_row_index())
-    
+
+        
     # Update the vocabularies
     print()
     print("Update the vocabularies...")
@@ -123,13 +143,50 @@ def main() -> None:
     print(f"Number of tokens for each language (with dfs >= {min_dfs}):")
     for language in vocabularies:
         print(f'\t{language}: {len(vocabularies[language])} tokens of which {round(len(common_vocab)/len(vocabularies[language])*100, 2)}% are in common.')
+    
+    # Reduce vocabulary based on PageRank score
+    print()
+    print("Reduce vocabularies based on Page Rank score...")
+    pr_df = pl.DataFrame()
+    for language in tqdm(languages):
+        edgeslist = pl.read_parquet(DATA_DIR / f"{args.platform}/backbones/{language}_bb.parquet").rows()
+        graph = Graph.TupleList(edgeslist, weights=True)
+
+        # Consider only the top quantile
+        pr_df = pr_df.vstack(pl.DataFrame({
+                             "Token": graph.vs["name"],
+                             "PageRank": graph.pagerank(weights="weight"),
+                             "language": language
+                         }).filter(pl.col("PageRank") >= pl.col("PageRank").quantile(pr)))
+        
+    summary = (
+        summary
+        .join(pr_df, on=["Token", "language"])
+    )
+
+    summary.write_parquet(DATA_DIR / f"{args.platform}/{args.platform}_summary.parquet")
+
+    # Update the vocabularies
+    print()
+    print("Update the vocabularies...")
+    for language in tqdm(vocabularies):
+        vocabularies[language] = summary.filter(pl.col('language')==language)['Token'].to_list()
+
+    common_vocab = set.intersection(*list(map(set, vocabularies.values())))
+
+    # Returning the number of tokens for each language, after romoving the ones with dfs less than min_dfs
+    print()
+    print(f"Number of common tokens between the vocabularies: {len(common_vocab)} tokens.")
+    print(f"Number of tokens for each language after backbone:")
+    for language in vocabularies:
+        print(f'\t{language}: {len(vocabularies[language])} tokens of which {round(len(common_vocab)/len(vocabularies[language])*100, 2)}% are in common.')
 
     # Get the common adjectives as anchors
     print()
     print("Retrieving the common adjectives as anchors...")
     adjectives_df = pl.DataFrame()
     for language in tqdm(languages):
-        adjectives_df = adjectives_df.vstack(pl.read_parquet(DATA_DIR / f'{platform}/adjectives/{language}_adjectives.parquet').with_columns(language=pl.lit(language)))
+        adjectives_df = adjectives_df.vstack(pl.read_parquet(DATA_DIR / f'{args.platform}/adjectives/{language}_adjectives.parquet').with_columns(language=pl.lit(language)))
 
     adjectives_df = (
                         adjectives_df
@@ -162,7 +219,7 @@ def main() -> None:
     print()
     print(sem_diff_df)
 
-    sem_diff_df.write_parquet(f'{platform}_results.parquet')
+    sem_diff_df.write_parquet(DATA_DIR / f"{args.platform}/{args.platform}_results.parquet")
         
     return None
 
