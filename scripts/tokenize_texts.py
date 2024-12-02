@@ -1,5 +1,8 @@
-"""The script to tokenize the texts of each language.
+"""This python module handles the tokenization of a language corpus.
+
+    To check the available parameters run 'python /path/to/tokenize_texts.py --help'.
 """
+
 # Add root to the path
 import sys
 from pathlib import Path
@@ -21,11 +24,28 @@ from src.tokenizer import Tokenizer
 def main() -> None:
     """The main loop.
     """
+    import argparse
+
+    description = """
+    This python module handles the tokenization of a language corpus.
+
+    To check the available parameters run 'python /path/to/tokenize_texts.py --help'.
+    """
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('-p',
+                        '--platform',
+                        help='The platform.',
+                        type=str,
+                        required=True)
+
+    args = parser.parse_args()
+
     # Defining paths
-    platform: str = "paranormal_good"
     CURRENT: Path = Path('.')
     DATA_DIR: Path = CURRENT / 'data'
-    PARQUET_PATH: Path = DATA_DIR / f"{platform}.parquet"
+    PARQUET_PATH: Path = DATA_DIR / f"{args.platform}.parquet"
     
     # Variables
     column = "text"
@@ -53,7 +73,7 @@ def main() -> None:
         tokenized_texts, adjectives, final_ids = nlp.tokenize(corporas[language], language, ids=ids[language], batch_size=100)
 
         # Define the path where to cache the results
-        path: Path = DATA_DIR / f"{platform}"
+        path: Path = DATA_DIR / f"{args.platform}"
         path.mkdir(exist_ok=True)
 
         # Save the resuls in parquet files
