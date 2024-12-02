@@ -3,6 +3,7 @@ models/*
 
 *.zip
 *.parquet
+*.csv
 
 *__pycache__
 
